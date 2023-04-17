@@ -1,0 +1,21 @@
+{
+  "name": "ssi-at-slack-chatgpt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/bolt": "^3.13.0",
+    "@slack/socket-mode": "^1.3.2",
+    "@slack/web-api": "^6.8.1",
+    "axios": "^1.3.5",
+    "dotenv": "^16.0.3",
+    "openai": "^3.2.1"
+  },
+  "type": "module"
+}
