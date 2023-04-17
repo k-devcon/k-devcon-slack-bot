@@ -19,6 +19,7 @@ const openai = new OpenAIApi(new Configuration({
 (async () => {
   await app.start();
   console.log('⚡️ Bolt app started');
+  sendHeartbeat();
 })();
 
 app.event('app_mention', async ({ event, context, client, say }) => {
@@ -63,3 +64,19 @@ app.event('app_mention', async ({ event, context, client, say }) => {
     console.error(error);
   }
 });
+
+function randomIntFromInterval(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function sendHeartbeat() {
+  setTimeout(async () => {
+    const result = await app.client.conversations.list({
+      token: process.env.BOT_TOKEN,
+      limit: 1
+    });
+    console.log(result);
+
+    sendHeartbeat();
+  }, randomIntFromInterval(5, 25) * 60 * 1000);
+}
