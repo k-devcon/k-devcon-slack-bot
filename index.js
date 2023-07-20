@@ -13,6 +13,6 @@ import { sendMessage } from "./slack.js";
   sendHeartbeat();
 })();
 
-cron.schedule("* 0 * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   sendMessage(process.env.GEEK_NEWS_BOT_TOKEN, "C0539A1CQA3", await GeekNewsRSS())
 })
