@@ -6,8 +6,8 @@ const { App } = pkg;
 dotenv.config();
 
 const app = new App({
-  token: process.env.BOT_TOKEN,
-  appToken: process.env.SLACK_APP_TOKEN,
+  token: process.env.CHATGPT_BOT_TOKEN,
+  appToken: process.env.CHATGPT_APP_TOKEN,
   socketMode: true,
 });
 
@@ -58,20 +58,4 @@ app.event('app_mention', async ({ event, context, client, say }) => {
   }
 });
 
-function randomIntFromInterval(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-function sendHeartbeat() {
-  setTimeout(async () => {
-    const result = await app.client.conversations.list({
-      token: process.env.BOT_TOKEN,
-      limit: 1
-    });
-    console.log(result);
-
-    sendHeartbeat();
-  }, randomIntFromInterval(5, 25) * 60 * 1000);
-}
-
-export { app, sendHeartbeat }
+export { app }
