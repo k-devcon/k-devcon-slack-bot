@@ -1,4 +1,4 @@
-import { randomIntFromInterval } from "./random-util";
+import { randomIntFromInterval } from "./random-util.js";
 
 function sendHeartbeat(app) {
   setTimeout(async () => {
