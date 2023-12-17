@@ -16,7 +16,7 @@ import { sendMessage } from "./utils/slack-util.js";
 
   await ArchiveBot.start();
 
-  sendHeartbeat(ChatGPTApp);
+  sendHeartbeat(ChatGPTBot);
 })();
 
 cron.schedule("0 0 * * *", async () => {
