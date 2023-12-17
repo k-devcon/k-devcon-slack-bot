@@ -29,7 +29,6 @@ app.event('app_mention', async ({ event, context, client, say }) => {
         channel: event.channel,
         ts: event.thread_ts
       })
-      console.log(replies.messages);
 
       messages.push(...replies.messages.map(message => {
         return {
