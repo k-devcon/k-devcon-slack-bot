@@ -8,7 +8,7 @@ dotenv.config();
 const app = new App({
   token: process.env.CHATGPT_BOT_TOKEN,
   appToken: process.env.CHATGPT_APP_TOKEN,
-  socketMode: true,
+  socketMode: true
 });
 
 const openai = new OpenAIApi(new Configuration({
@@ -44,7 +44,7 @@ app.event('app_mention', async ({ event, context, client, say }) => {
     }
 
     const response = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages: messages,
     });
     const content = response.data.choices[0].message.content;
