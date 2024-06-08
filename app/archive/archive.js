@@ -1,3 +1,5 @@
+import cron from "node-cron"
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -15,5 +17,9 @@ const app = new App({
 app.event('message', async ({ event, context, client, say }) => {
   await pool.query('insert into slack_message_events(data) values($1)', [event])
 });
+
+cron.schedule("* 0 * * *", async () => {
+  await pool.query('select 1')
+})
 
 export { app }
