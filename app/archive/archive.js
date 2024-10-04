@@ -1,9 +1,8 @@
-import cron from "node-cron"
-
 import dotenv from "dotenv";
 dotenv.config();
 
-import { pool } from "../../database/pool.js";
+import { db } from "../utils/firebase.js";
+import { getYYMMDD } from "../utils/formatter.js";
 
 import pkg from "@slack/bolt";
 
@@ -14,12 +13,8 @@ const app = new App({
   socketMode: true,
 });
 
-app.event('message', async ({ event, context, client, say }) => {
-  await pool.query('insert into slack_message_events(data) values($1)', [event])
+app.event("message", async ({ event }) => {
+  db.ref(`events/${getYYMMDD()}`).push().set(event);
 });
 
-cron.schedule("* 0 * * *", async () => {
-  await pool.query('select 1')
-})
-
-export { app }
+export { app };
