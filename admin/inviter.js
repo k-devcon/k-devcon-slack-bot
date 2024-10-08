@@ -24,7 +24,7 @@ async function inviteEveryone(channelId, excludedUserIds) {
 async function getUsers() {
   const userListResponse = await axios.get("https://slack.com/api/users.list", {
     headers: {
-      Authorization: `Bearer ${process.env.ARCHIVE_BOT_TOKEN}`,
+      Authorization: `Bearer ${process.env.HOLANG_BOT_TOKEN}`,
     },
   });
   return userListResponse.data.members.map((member) => member.id);

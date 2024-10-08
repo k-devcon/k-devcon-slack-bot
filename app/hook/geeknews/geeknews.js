@@ -39,8 +39,9 @@ function replaceHTMLCode(text) {
 
 const hook = {
   start: () => {
-    cron.schedule("0 0 * * *", () => {
-      app.sendHook(process.env.GEEK_NEWS_HOOK_URL);
+    // 08시 00분
+    cron.schedule("0 23 * * *", () => {
+      hook.sendHook(process.env.GEEK_NEWS_HOOK_URL);
     });
   },
   sendHook: async (hookURL) => {

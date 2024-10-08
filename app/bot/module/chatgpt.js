@@ -11,7 +11,7 @@ const openai = new OpenAIApi(
 );
 
 const module = {
-  answer: async function answer(event, client, say) {
+  answer: async (event, client, say) => {
     try {
       const messages = [
         {
@@ -30,14 +30,14 @@ const module = {
           ...replies.messages.map((message) => {
             return {
               role: message.bot_id ? "assistant" : "user",
-              content: message.text.replace(/<@U0548CQEWPJ>/gi, ""),
+              content: message.text.replace(/<@U06A311GGTH>/gi, ""),
             };
           })
         );
       } else {
         messages.push({
           role: "user",
-          content: event.text.replace(/<@U0548CQEWPJ>/gi, ""),
+          content: event.text.replace(/<@U06A311GGTH>/gi, ""),
         });
       }
 
@@ -53,7 +53,7 @@ const module = {
       console.error(error);
     }
   },
-  isChatGPTAllowedChannel: function (event) {
+  isChatGPTAllowedChannel: (event) => {
     return isChatGPTAllowedChannel(event);
   },
 };

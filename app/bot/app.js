@@ -5,7 +5,7 @@ import pkg from "@slack/bolt";
 
 import { module as ChatGPTModule } from "./module/chatgpt.js";
 import { module as ArchiveModule } from "./module/archive.js";
-import { AttendanceModule } from "./module/attendance.js";
+import { AttendanceModule } from "./module/attendance/attendance-module.js";
 
 const { App } = pkg;
 const bolt = new App({
@@ -17,20 +17,33 @@ const bolt = new App({
 const app = {
   start: async () => {
     await bolt.start();
-    const attendanceModule = new AttendanceModule(bolt);
+    init();
+    new AttendanceModule(bolt);
   },
 };
 
-bolt.event("message", async ({ event }) => {
-  if (ArchiveModule.isArchiveUseChannel(event)) {
-    ArchiveModule.archive(event);
-  }
-});
+function init() {
+  // should subscribe 'message.channels', 'message.groups' event in "Features - Event Subscriptions - Subscribe to bot events"
+  bolt.event("message", async ({ event }) => {
+    try {
+      if (ArchiveModule.isArchiveUseChannel(event)) {
+        ArchiveModule.archive(event);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  });
 
-bolt.event("app_mention", async ({ event, context, client, say }) => {
-  if (ChatGPTModule.isChatGPTAllowedChannel(event)) {
-    ChatGPTModule.answer(event, client, say);
-  }
-});
+  // should subscribe 'app_mention' event in "Features - Event Subscriptions - Subscribe to bot events"
+  bolt.event("app_mention", async ({ event, client, say }) => {
+    try {
+      if (ChatGPTModule.isChatGPTAllowedChannel(event)) {
+        ChatGPTModule.answer(event, client, say);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  });
+}
 
 export { app };

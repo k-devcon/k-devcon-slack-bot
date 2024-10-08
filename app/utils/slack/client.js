@@ -38,12 +38,13 @@ class SlackClient {
     return response;
   }
 
-  async sendEphmeral(channel, text) {
+  async sendEphmeral(channel, text, userId) {
     const response = await this.send(
       "https://slack.com/api/chat.postEphemeral",
       {
         channel: channel,
         text: text,
+        user: userId,
       },
       {
         Authorization: `Bearer ${this.#token}`,
@@ -52,12 +53,28 @@ class SlackClient {
     return response;
   }
 
-  async updateMessage(channel, text) {
+  async updateMessage(channel, text, ts) {
     const response = await this.send(
       "https://slack.com/api/chat.update",
       {
         channel: channel,
         text: text,
+        ts: ts,
+      },
+      {
+        Authorization: `Bearer ${this.#token}`,
+      }
+    );
+    return response;
+  }
+
+  async updateBlockMessage(channel, blocks, ts) {
+    const response = await this.send(
+      "https://slack.com/api/chat.update",
+      {
+        channel: channel,
+        blocks: blocks,
+        ts: ts,
       },
       {
         Authorization: `Bearer ${this.#token}`,
@@ -82,6 +99,20 @@ class SlackClient {
     });
     return response;
   }
+
+  async getProfile(userId) {
+    const response = await axios.get(
+      `https://slack.com/api/users.profile.get?user=${userId}`,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          Authorization: `Bearer ${this.#token}`,
+        }
+      });
+    return response;
+  }
+
+
 }
 
 export { SlackClient };
