@@ -66,7 +66,7 @@ async function getTop10RankingBlock() {
     return ">아직 참여자가 없습니다.";
   }
 
-  return Object.values(ranking).map((user) => `>${user.rank}. ${user.name} (${user.count}회)`).join("\n");
+  return Object.values(ranking).filter((user) => user.rank <= 10).map((user) => `>${user.rank}. ${user.name} (${user.count}회)`).join("\n");
 }
 
 async function getMyAttendanceHistoryText(userId) {
