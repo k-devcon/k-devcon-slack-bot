@@ -2,7 +2,7 @@ import { db } from "../../../utils/firebase.js";
 import { getYYMMDD } from "../../../utils/formatter.js";
 import { getDailyAttendanceCheckBlock } from "./formatter.js";
 
-async function attend(referenceDate, userId, slackClient, channelId, ts) {
+async function attend(referenceDate, userId, slackClient, channelId, ts, ack) {
   try {
     const today = getYYMMDD();
 
@@ -14,6 +14,7 @@ async function attend(referenceDate, userId, slackClient, channelId, ts) {
         `이미 지난 일자입니다!`,
         userId
       );
+      await ack();
       return;
     }
 
@@ -27,8 +28,13 @@ async function attend(referenceDate, userId, slackClient, channelId, ts) {
         `오늘은 이미 출석하였습니다!`,
         userId
       );
+      await ack();
       return;
     }
+
+    // 출석 처리 (중복방지용)
+    db.ref(`attendance/history/${userId}/${today}`).set(true);
+    await ack();
 
     // 사용자 이름 조회
     // https://slack.com/api/users.profile.get
@@ -38,6 +44,12 @@ async function attend(referenceDate, userId, slackClient, channelId, ts) {
       throw new Error(`profile fetch failed : user-id : ${userId}`);
     }
     const name = profile.real_name_normalized || profile.display_name_normalized;
+
+    // 출석 처리 (오늘의 참여자 표시용)
+    db.ref(`attendance/daily/${today}`).push().set({
+      id: userId,
+      name: name
+    });
 
     // 카운터 업데이트
     const countRef = db.ref(`attendance/counts/${userId}`);
@@ -53,13 +65,6 @@ async function attend(referenceDate, userId, slackClient, channelId, ts) {
         count: 1,
       });
     }
-
-    // 출석 처리
-    db.ref(`attendance/history/${userId}/${today}`).set(true);
-    db.ref(`attendance/daily/${today}`).push().set({
-      id: userId,
-      name: name
-    });
 
     // 본문 업데이트
     slackClient.updateBlockMessage(

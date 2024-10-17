@@ -25,13 +25,11 @@ class AttendanceModule {
     if(this.#bolt) {
       // 출석하기
       this.#bolt.action("attendance", async ({ body, ack }) => {
-        await ack();
-
         const referenceDate = body.actions[0].value;
         const userId = body.user.id;
         const channelId = body.channel.id;
         const ts = body.message.ts;
-        await attend(referenceDate, userId, slackClient, channelId, ts);
+        await attend(referenceDate, userId, slackClient, channelId, ts, ack);
       });
 
       // 나의 출석기록 보기
