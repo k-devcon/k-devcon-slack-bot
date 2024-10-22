@@ -5,6 +5,7 @@ import pkg from "@slack/bolt";
 
 import { module as ChatGPTModule } from "./module/chatgpt.js";
 import { module as ArchiveModule } from "./module/archive.js";
+import { module as HomeModule } from "./module/home.js";
 import { AttendanceModule } from "./module/attendance/attendance-module.js";
 
 const { App } = pkg;
@@ -45,27 +46,11 @@ function init() {
     }
   });
 
-  bolt.event('app_home_opened', async ({ event, client, context }) => {
+  bolt.event('app_home_opened', async ({ event, client }) => {
     try {
-      await client.views.publish({
-        user_id: event.user,
-        view: {
-          type: 'home',
-          callback_id: 'home_view',
-          blocks: [
-            {
-              "type": "section",
-              "text": {
-                "type": "mrkdwn",
-                "text": "<https://github.com/k-devcon/k-devcon-slack-bot|k-devcon-slack-bot github repository> 에서 코드 수정 및 기능 제안을 할 수 있습니다."
-              }
-            }
-          ]
-        }
-      });
-    }
-    catch (error) {
-      console.error(error);
+      await HomeModule.publish(event, client)
+    } catch (e) {
+      console.error(e);
     }
   });
 }
