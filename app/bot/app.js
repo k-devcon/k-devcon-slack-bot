@@ -44,6 +44,30 @@ function init() {
       console.error(e);
     }
   });
+
+  bolt.event('app_home_opened', async ({ event, client, context }) => {
+    try {
+      await client.views.publish({
+        user_id: event.user,
+        view: {
+          type: 'home',
+          callback_id: 'home_view',
+          blocks: [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "<https://github.com/k-devcon/k-devcon-slack-bot|k-devcon-slack-bot github repository> 에서 코드 수정 및 기능 제안을 할 수 있습니다."
+              }
+            }
+          ]
+        }
+      });
+    }
+    catch (error) {
+      console.error(error);
+    }
+  });
 }
 
 export { app };
