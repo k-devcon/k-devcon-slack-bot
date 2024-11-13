@@ -5,7 +5,11 @@ import cron from "node-cron";
 
 import { SlackClient } from "../../../utils/slack/client.js";
 import { getYYMMDD } from "../../../utils/formatter.js";
-import { getDailyAttendanceCheckBlock, getMyAttendanceHistoryText, getMyAttendanceRankingText } from "./formatter.js";
+import {
+  getDailyAttendanceCheckBlock,
+  getMyAttendanceHistoryText,
+  getMyAttendanceRankingText,
+} from "./formatter.js";
 import { attend } from "./attendance.js";
 
 const slackClient = new SlackClient(process.env.HOLANG_BOT_TOKEN);
@@ -22,7 +26,7 @@ class AttendanceModule {
 
     setCron();
 
-    if(this.#bolt) {
+    if (this.#bolt) {
       // 출석하기
       this.#bolt.action("attendance", async ({ body, ack }) => {
         const referenceDate = body.actions[0].value;
@@ -38,7 +42,11 @@ class AttendanceModule {
 
         const userId = body.user.id;
         const channelId = body.channel.id;
-        slackClient.sendEphmeral(channelId, await getMyAttendanceHistoryText(userId), userId);
+        slackClient.sendEphmeral(
+          channelId,
+          await getMyAttendanceHistoryText(userId),
+          userId
+        );
       });
 
       // 나의 랭킹 보기
@@ -47,7 +55,11 @@ class AttendanceModule {
 
         const userId = body.user.id;
         const channelId = body.channel.id;
-        slackClient.sendEphmeral(channelId, await getMyAttendanceRankingText(userId), userId);
+        slackClient.sendEphmeral(
+          channelId,
+          await getMyAttendanceRankingText(userId),
+          userId
+        );
       });
     }
   }
@@ -58,7 +70,7 @@ function setCron() {
   cron.schedule("0 23 * * *", async () => {
     const today = getYYMMDD();
     slackClient.sendBlockMessage(
-      'C022TDW28KW', // 잡담
+      "C080GSQ3LLW", // 출석체크
       // 'C053JGL7M1Q', // 테스트
       await getDailyAttendanceCheckBlock(today)
     );
