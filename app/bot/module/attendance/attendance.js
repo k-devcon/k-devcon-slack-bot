@@ -5,6 +5,7 @@ import { getDailyAttendanceCheckBlock } from "./formatter.js";
 async function attend(referenceDate, userId, slackClient, channelId, ts, ack) {
   try {
     const today = getYYMMDD();
+    const yymm = today.substring(0, 4);
 
     // 기준일 확인
     if (referenceDate !== today) {
@@ -19,7 +20,7 @@ async function attend(referenceDate, userId, slackClient, channelId, ts, ack) {
     }
 
     // 출석 여부 확인
-    const historyRef = db.ref(`attendance/history/${userId}/${today}`);
+    const historyRef = db.ref(`attendance/${yymm}/history/${userId}/${today}`);
     const historySnapshot = await historyRef.get();
     if (historySnapshot.exists()) {
       console.log(`${userId} already attend at ${today}`);
@@ -33,7 +34,7 @@ async function attend(referenceDate, userId, slackClient, channelId, ts, ack) {
     }
 
     // 출석 처리 (중복방지용)
-    db.ref(`attendance/history/${userId}/${today}`).set(true);
+    db.ref(`attendance/${yymm}/history/${userId}/${today}`).set(true);
     await ack();
 
     // 사용자 이름 조회
@@ -46,13 +47,13 @@ async function attend(referenceDate, userId, slackClient, channelId, ts, ack) {
     const name = profile.real_name_normalized || profile.display_name_normalized;
 
     // 출석 처리 (오늘의 참여자 표시용)
-    db.ref(`attendance/daily/${today}`).push().set({
+    db.ref(`attendance/${yymm}/daily/${today}`).push().set({
       id: userId,
       name: name
     });
 
     // 카운터 업데이트
-    const countRef = db.ref(`attendance/counts/${userId}`);
+    const countRef = db.ref(`attendance/${yymm}/counts/${userId}`);
     const countSnapshot = await countRef.get();
     if (countSnapshot.exists()) {
       countRef.set({

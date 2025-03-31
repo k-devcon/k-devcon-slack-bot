@@ -1,6 +1,10 @@
 import { db } from "../../../utils/firebase.js";
-import { getFormattedYYMMDD } from "../../../utils/formatter.js";
-import { getMyAttendanceRanking, getUserListOrderByRanking } from "./ranking.js";
+import { getFormattedYYMMDD, getYYMM } from "../../../utils/formatter.js";
+import {
+  calculateMonthlyRanking,
+  getMyAttendanceRanking,
+  getUserListOrderByRanking,
+} from "./ranking.js";
 
 async function getDailyAttendanceCheckBlock(today) {
   const todayAttendanceBlock = await getTodayAttendanceBlock(today);
@@ -50,13 +54,16 @@ async function getDailyAttendanceCheckBlock(today) {
 }
 
 async function getTodayAttendanceBlock(today) {
-  const dailySnapshot = await db.ref(`attendance/daily/${today}`).get();
+  const yymm = today.substring(0, 4);
+  const dailySnapshot = await db.ref(`attendance/${yymm}/daily/${today}`).get();
   const dailyList = dailySnapshot.val();
   if (dailyList == null) {
     return ">아직 참여자가 없습니다.";
   }
 
-  return Object.values(dailyList).map((user, index) => `>${index + 1}. ${user.name}`).join("\n");
+  return Object.values(dailyList)
+    .map((user, index) => `>${index + 1}. ${user.name}`)
+    .join("\n");
 }
 
 async function getTop10RankingBlock() {
@@ -66,30 +73,59 @@ async function getTop10RankingBlock() {
     return ">아직 참여자가 없습니다.";
   }
 
-  return Object.values(ranking).filter((user) => user.rank <= 10).map((user) => `>${user.rank}. ${user.name} (${user.count}회)`).join("\n");
+  return Object.values(ranking)
+    .filter((user) => user.rank <= 10)
+    .map((user) => `>${user.rank}. ${user.name} (${user.count}회)`)
+    .join("\n");
 }
 
 async function getMyAttendanceHistoryText(userId) {
-  const myHistoryRef = db.ref(`attendance/history/${userId}`);
+  const yymm = getYYMM();
+  const myHistoryRef = db.ref(`attendance/${yymm}/history/${userId}`);
   const myHistory = await myHistoryRef.get();
-  const myHistoryList = myHistory.val()
+  const myHistoryList = myHistory.val();
   if (myHistoryList == null) {
     return "참여기록이 없습니다.";
   }
 
   const attendanceDates = Object.keys(myHistoryList);
-  const myHistoryBlock = attendanceDates.map(dateString => `- ${getFormattedYYMMDD(dateString)}`).join('\n');
+  const myHistoryBlock = attendanceDates
+    .map((dateString) => `- ${getFormattedYYMMDD(dateString)}`)
+    .join("\n");
 
   return `*내 출석기록 (${attendanceDates.length}회)*\n\n${myHistoryBlock}`;
 }
 
 async function getMyAttendanceRankingText(userId) {
   const myAttendanceRanking = await getMyAttendanceRanking(userId);
-  if(myAttendanceRanking === undefined) {
+  if (myAttendanceRanking === undefined) {
     return "참여기록이 없습니다.";
   }
 
   return `현재 ${myAttendanceRanking.rank} 등 입니다.`;
 }
 
-export { getDailyAttendanceCheckBlock, getMyAttendanceHistoryText, getMyAttendanceRankingText }
+async function getMonthlyReportBlock(yymm) {
+  const monthlyRanking = await calculateMonthlyRanking(yymm);
+  const monthlyRankingBlock = monthlyRanking
+    .map((count) => `${count.rank}등 ${count.name} (${count.count})`)
+    .join("\n");
+
+  const mm = yymm.substring(2, 4);
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*:fire:${mm}월의 출석 기록:fire:*\n\n${monthlyRankingBlock}`,
+      },
+    },
+  ];
+}
+
+export {
+  getDailyAttendanceCheckBlock,
+  getMyAttendanceHistoryText,
+  getMyAttendanceRankingText,
+  getMonthlyReportBlock,
+};

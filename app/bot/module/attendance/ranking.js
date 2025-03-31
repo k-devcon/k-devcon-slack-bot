@@ -1,16 +1,23 @@
 import { db } from "../../../utils/firebase.js";
+import { getYYMM } from "../../../utils/formatter.js";
 
 async function getUserListOrderByRanking() {
-  const userListOrderByCountRef = db.ref(`attendance/counts`).orderByChild('count');
+  const yymm = getYYMM();
+  const userListOrderByCountRef = db
+    .ref(`attendance/${yymm}/counts`)
+    .orderByChild("count");
   const userListOrderByCountSnapshot = await userListOrderByCountRef.get();
   const userListOrderByCount = [];
 
-  userListOrderByCountSnapshot.forEach(childSnapshot => {
-    userListOrderByCount.push({ id: childSnapshot.key, ...childSnapshot.val() });
+  userListOrderByCountSnapshot.forEach((childSnapshot) => {
+    userListOrderByCount.push({
+      id: childSnapshot.key,
+      ...childSnapshot.val(),
+    });
   });
 
   if (userListOrderByCount.length === 0) {
-    return userListOrderByCount
+    return userListOrderByCount;
   }
 
   const ranking = calculateRanking(userListOrderByCount.reverse());
@@ -30,19 +37,18 @@ function calculateRanking(users) {
   let skipRank = 0; // 순위 건너뛰기
 
   for (let user of users) {
-
     if (user.count !== prevCount) {
-        currentRank += skipRank;
-        skipRank = 1;
+      currentRank += skipRank;
+      skipRank = 1;
     } else {
-        skipRank++;
+      skipRank++;
     }
 
     ranking.push({
-        id: user.id,
-        name: user.name,
-        count: user.count,
-        rank: currentRank
+      id: user.id,
+      name: user.name,
+      count: user.count,
+      rank: currentRank,
     });
 
     prevCount = user.count;
@@ -51,4 +57,52 @@ function calculateRanking(users) {
   return ranking;
 }
 
-export { getUserListOrderByRanking, getMyAttendanceRanking, calculateRanking }
+async function calculateMonthlyRanking(yymm) {
+  const dailyDataOfMonthRef = db.ref(`attendance/${yymm}/daily`);
+  const dailyDataOfMonthSnapshot = await dailyDataOfMonthRef.get();
+  const dailyDataOfMonth = dailyDataOfMonthSnapshot.val();
+
+  const users = {};
+  const counter = {};
+
+  Object.keys(dailyDataOfMonth)
+    .filter((key) => key.startsWith(yymm))
+    .forEach((key) => {
+      Object.values(dailyDataOfMonth[key]).forEach((user) => {
+        if (!(user.id in users)) {
+          users[user.id] = user.name;
+        }
+
+        if (!(user.id in counter)) {
+          counter[user.id] = 0;
+        }
+        counter[user.id]++;
+      });
+    });
+
+  const counts = Object.keys(counter).map((key) => {
+    return {
+      name: users[key],
+      count: counter[key],
+    };
+  });
+
+  const sorted = Object.values(counts).sort((a, b) => {
+    if (a.count > b.count) {
+      return -1;
+    }
+    if (a.count < b.count) {
+      return 1;
+    }
+    return 0;
+  });
+
+  return calculateRanking(sorted);
+}
+
+export {
+  getUserListOrderByRanking,
+  getMyAttendanceRanking,
+  calculateRanking,
+  calculateMonthlyRanking,
+};

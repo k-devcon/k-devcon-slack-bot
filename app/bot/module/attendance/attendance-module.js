@@ -4,13 +4,15 @@ dotenv.config();
 import cron from "node-cron";
 
 import { SlackClient } from "../../../utils/slack/client.js";
-import { getYYMMDD } from "../../../utils/formatter.js";
+import { getYYMM, getYYMMDD } from "../../../utils/formatter.js";
 import {
   getDailyAttendanceCheckBlock,
   getMyAttendanceHistoryText,
   getMyAttendanceRankingText,
+  getMonthlyReportBlock,
 } from "./formatter.js";
 import { attend } from "./attendance.js";
+import { getKstDate } from "../../../utils/date-util.js";
 
 const slackClient = new SlackClient(process.env.HOLANG_BOT_TOKEN);
 
@@ -74,6 +76,21 @@ function setCron() {
       // 'C053JGL7M1Q', // 테스트
       await getDailyAttendanceCheckBlock(today)
     );
+  });
+
+  // 매월 1일 07시 55분
+  cron.schedule("55 22 * * *", async () => {
+    const today = getYYMMDD();
+    if (today.substring(4, 6) == "01") {
+      const date = getKstDate();
+      date.setDate(-1);
+      const yymm = getYYMM(date);
+      slackClient.sendBlockMessage(
+        "C080GSQ3LLW", // 출석체크
+        // "C053JGL7M1Q", // 테스트
+        await getMonthlyReportBlock(yymm)
+      );
+    }
   });
 }
 

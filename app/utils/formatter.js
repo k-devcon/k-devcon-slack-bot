@@ -1,10 +1,18 @@
-import dotenv from "dotenv";
-dotenv.config();
+import { getKstDate } from "./date-util.js";
 
-const TIMEZONE_OFFSET = process.env.TIMEZONE_OFFSET ? parseInt(process.env.TIMEZONE_OFFSET) : 0;
+function getYYMM(date) {
+  if (date === undefined) {
+    date = getKstDate();
+  }
+  const year = date.getFullYear().toString().slice(-2);
+  const month = ("0" + (date.getMonth() + 1)).slice(-2);
+  return `${year}${month}`;
+}
 
-function getYYMMDD() {
-  const date = new Date(new Date().getTime() + TIMEZONE_OFFSET * 60 * 1000); // timezone offset handling
+function getYYMMDD(date) {
+  if (date === undefined) {
+    date = getKstDate();
+  }
   const year = date.getFullYear().toString().slice(-2);
   const month = ("0" + (date.getMonth() + 1)).slice(-2);
   const day = ("0" + date.getDate()).slice(-2);
@@ -15,7 +23,10 @@ function getFormattedYYMMDD(dateString) {
   if (dateString === undefined) {
     dateString = getYYMMDD();
   }
-  return `${dateString.slice(0,2)}/${dateString.slice(2,4)}/${dateString.slice(4,6)}`;
+  const yy = dateString.slice(0, 2);
+  const mm = dateString.slice(2, 4);
+  const dd = dateString.slice(4, 6);
+  return `${yy}/${mm}/${dd}`;
 }
 
-export { getYYMMDD, getFormattedYYMMDD };
+export { getYYMM, getYYMMDD, getFormattedYYMMDD };
