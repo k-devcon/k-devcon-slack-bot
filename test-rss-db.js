@@ -49,19 +49,19 @@ if (result.error) {
 }
 
 // 환경 변수가 설정된 후에 다른 모듈 import
-import { getConnectionPool } from "./app/utils/db.js";
+import { getConnectionPool, closeConnection } from "./app/utils/db.js";
 import { processRSSFeed } from "./app/hook/geeknews/geeknews.js";
 
 async function testDBConnection() {
   console.log("=== DB 연결 테스트 ===");
-  const pool = getConnectionPool();
   
   try {
+    const pool = getConnectionPool();
     const [rows] = await pool.execute("SELECT 1 as test");
     console.log("✅ DB 연결 성공:", rows);
     return true;
   } catch (error) {
-    console.error("❌ DB 연결 실패:", error.message);
+    console.error("❌ DB 연결 실패:", error.message || error);
     return false;
   }
 }
@@ -69,10 +69,21 @@ async function testDBConnection() {
 async function testRSSFeed() {
   console.log("\n=== RSS 피드 처리 테스트 ===");
   try {
-    await processRSSFeed();
-    console.log("✅ RSS 피드 처리 완료");
+    const result = await processRSSFeed();
+    if (result.success) {
+      console.log(
+        `✅ RSS 피드 처리 완료: ${result.savedCount}개의 포스트 저장됨`
+      );
+      if (result.errorCount > 0) {
+        console.warn(`⚠️  ${result.errorCount}개의 오류가 발생했습니다.`);
+      }
+    } else {
+      console.error("❌ RSS 피드 처리 실패:", result.error);
+    }
+    return result.success;
   } catch (error) {
-    console.error("❌ RSS 피드 처리 실패:", error);
+    console.error("❌ RSS 피드 처리 실패:", error.message || error);
+    return false;
   }
 }
 
@@ -103,8 +114,13 @@ async function main() {
   }
   
   // 연결 종료
-  const pool = getConnectionPool();
-  await pool.end();
+  try {
+    await closeConnection();
+    console.log("\n✅ DB 연결 종료 완료");
+  } catch (error) {
+    console.warn("⚠️  DB 연결 종료 중 오류:", error.message || error);
+  }
+  
   console.log("\n테스트 완료");
 }
 
