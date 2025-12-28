@@ -65,7 +65,7 @@ DB_REGISTER_ID=
 
 ## 추가 기능 : K-DEVCON 커뮤니티에 포스팅
 
-mysql의 `Post` 엔티티에 IT 블로그 게시글을 발행 직접 입력
+mysql의 `Post` 엔티티에 IT 블로그 게시글을 직접 저장합니다.
 
 ### 테스트
 ```bash
