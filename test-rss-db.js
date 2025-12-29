@@ -50,7 +50,8 @@ if (result.error) {
 
 // 환경 변수가 설정된 후에 다른 모듈 import
 import { getConnectionPool, closeConnection } from "./app/utils/db.js";
-import { processRSSFeed } from "./app/hook/geeknews/geeknews.js";
+import { processRSSFeed as processGeekNewsRSS } from "./app/hook/geeknews/geeknews.js";
+import { processRSSFeed as processVelopersRSS } from "./app/hook/velopers/velopers.js";
 
 async function testDBConnection() {
   console.log("=== DB 연결 테스트 ===");
@@ -66,23 +67,23 @@ async function testDBConnection() {
   }
 }
 
-async function testRSSFeed() {
-  console.log("\n=== RSS 피드 처리 테스트 ===");
+async function testRSSFeed(processRSSFeed, feedName) {
+  console.log(`\n=== ${feedName} RSS 피드 처리 테스트 ===`);
   try {
     const result = await processRSSFeed();
     if (result.success) {
       console.log(
-        `✅ RSS 피드 처리 완료: ${result.savedCount}개의 포스트 저장됨`
+        `✅ ${feedName} RSS 피드 처리 완료: ${result.savedCount}개의 포스트 저장됨`
       );
       if (result.errorCount > 0) {
         console.warn(`⚠️  ${result.errorCount}개의 오류가 발생했습니다.`);
       }
     } else {
-      console.error("❌ RSS 피드 처리 실패:", result.error);
+      console.error(`❌ ${feedName} RSS 피드 처리 실패:`, result.error);
     }
     return result.success;
   } catch (error) {
-    console.error("❌ RSS 피드 처리 실패:", error.message || error);
+    console.error(`❌ ${feedName} RSS 피드 처리 실패:`, error.message || error);
     return false;
   }
 }
@@ -102,8 +103,9 @@ async function main() {
   const dbConnected = await testDBConnection();
   
   if (dbConnected) {
-    // RSS 피드 처리 테스트
-    await testRSSFeed();
+    // RSS 피드 처리 테스트 (GeekNews와 Velopers 모두 테스트)
+    await testRSSFeed(processGeekNewsRSS, "GeekNews");
+    await testRSSFeed(processVelopersRSS, "Velopers");
   } else {
     console.log("\n⚠️  DB 연결 실패로 RSS 피드 처리를 건너뜁니다.");
     console.log("DB 설정을 확인해주세요:");
