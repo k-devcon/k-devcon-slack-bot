@@ -10,7 +10,7 @@ import { getConnectionPool } from "../../utils/db.js";
 const slackClient = new SlackClient();
 
 // RSS 피드 URL 상수
-const RSS_FEED_URL = "http://feeds.feedburner.com/geeknews-feed";
+const RSS_FEED_URL = "https://www.velopers.kr/summary-rss.xml";
 
 /**
  * RSS 피드를 가져옵니다
@@ -26,20 +26,30 @@ async function fetchRSSFeed() {
  * @param {Object} feed - RSS 피드 객체
  * @returns {string} 슬랙 메시지 텍스트
  */
-async function GeekNewsRSS(feed) {
+async function VelopersRSS(feed) {
   let text = "";
   let now = new Date().getTime();
+  // 환경 변수로 필터 기간 조절 가능 (기본값: 1일)
+  const filterDays = parseInt(process.env.VELOPERS_FILTER_DAYS) || 1;
+  const FILTER_MS = 60 * 60 * 24 * 1000 * filterDays;
 
   if (!feed || !feed.items) {
     return text.trim();
   }
 
   feed.items.forEach((item) => {
-    if (now - new Date(item.pubDate).getTime() < 60 * 60 * 24 * 1000) {
-      text += `<${item.link}|*${item.title}*>\n>${
-        item.content
+    // velopers RSS: <pubDate> 또는 <dc:date>를 사용
+    const pubDateValue = item.pubDate || item["dc:date"];
+    if (!pubDateValue) return;
+
+    if (now - new Date(pubDateValue).getTime() < FILTER_MS) {
+      // velopers RSS는 <description> 태그에 본문이 있음
+      const content = item.description || "";
+      const link = item.link || item.guid || "";
+      text += `<${link}|*${item.title || "(제목 없음)"}*>\n>${
+        content
           ? replaceHTMLCode(
-              item.content
+              content
                 .replace(/(<([^>]+)>)/gi, "")
                 .trim()
                 .replace(/\n/g, "\n>")
@@ -62,8 +72,8 @@ function replaceHTMLCode(text) {
  * @returns {string} 정리된 본문
  */
 function cleanContent(item) {
-  // content와 contentSnippet 중 더 긴 것을 사용
-  const contentText = item.content || "";
+  // velopers RSS는 <description> 태그에 본문이 있으므로 description을 사용
+  const contentText = item.description || "";
   const contentSnippetText = item.contentSnippet || "";
   const rawContent =
     contentText.length > contentSnippetText.length
@@ -120,7 +130,7 @@ async function savePostToDB(item) {
 
     // 본문 처리
     const cleanedContent = cleanContent(item);
-    const originalLink = item.link || "";
+    const originalLink = item.link || item.guid || "";
     const linkHtml = createLinkHtml(originalLink);
 
     // 최종 본문 구성
@@ -168,7 +178,10 @@ async function savePostToDB(item) {
  * @returns {Promise<{success: boolean, savedCount: number, error?: string}>}
  */
 async function processRSSFeed(feed = null) {
-  const ONE_DAY_MS = 60 * 60 * 24 * 1000;
+  // 환경 변수로 필터 기간 조절 가능 (기본값: 1일)
+  // 테스트를 위해 더 긴 기간(예: 7일, 30일)으로 설정하려면 VELOPERS_FILTER_DAYS=7 설정
+  const filterDays = parseInt(process.env.VELOPERS_FILTER_DAYS) || 1;
+  const FILTER_MS = 60 * 60 * 24 * 1000 * filterDays;
 
   try {
     // 피드가 전달되지 않았으면 가져오기 (테스트 등에서 직접 호출할 때를 위해)
@@ -184,28 +197,38 @@ async function processRSSFeed(feed = null) {
       return { success: true, savedCount: 0 };
     }
 
+    console.log(`Velopers RSS 피드 처리 시작 (필터 기간: ${filterDays}일)`);
+
     for (const item of feed.items) {
       try {
-        // 24시간 이내 발행된 글만 처리
-        if (!item.pubDate) {
+        // 설정된 기간 이내 발행된 글만 처리
+        // velopers RSS는 pubDate 또는 dc:date를 사용할 수 있음
+        const pubDateValue = item.pubDate || item["dc:date"] || item.isoDate;
+        if (!pubDateValue) {
           console.warn("발행일이 없는 RSS 아이템을 건너뜁니다:", item.title);
           continue;
         }
 
-        const pubDate = new Date(item.pubDate).getTime();
+        const pubDate = new Date(pubDateValue).getTime();
         if (isNaN(pubDate)) {
           console.warn(
-            `유효하지 않은 발행일: ${item.pubDate}`,
+            `유효하지 않은 발행일: ${pubDateValue}`,
             item.title || "제목 없음"
           );
           continue;
         }
 
-        if (now - pubDate < ONE_DAY_MS) {
+        const daysDiff = (now - pubDate) / (1000 * 60 * 60 * 24);
+        if (now - pubDate < FILTER_MS) {
           const saved = await savePostToDB(item);
           if (saved) {
             savedCount++;
+            console.log(`✅ 저장 완료: "${item.title}" (${daysDiff.toFixed(1)}일 전)`);
+          } else {
+            console.log(`⚠️  저장 실패 또는 중복: "${item.title}" (${daysDiff.toFixed(1)}일 전)`);
           }
+        } else {
+          console.log(`⏭️  "${item.title}"는 ${filterDays}일 이내 글이 아니므로 건너뜁니다. (경과: ${daysDiff.toFixed(1)}일)`);
         }
       } catch (itemError) {
         errorCount++;
@@ -238,7 +261,7 @@ const hook = {
       // RSS 피드 확인 및 DB 저장
       await processRSSFeed(feed);
       // 슬랙에 포스팅 (기존 기능 유지)
-      hook.sendHook(process.env.GEEK_NEWS_HOOK_URL, feed);
+      hook.sendHook(process.env.VELOPERS_HOOK_URL, feed);
     });
   },
   sendHook: async (hookURL, feed = null) => {
@@ -246,8 +269,9 @@ const hook = {
     if (!feed) {
       feed = await fetchRSSFeed();
     }
-    slackClient.sendHook(hookURL, await GeekNewsRSS(feed));
+    slackClient.sendHook(hookURL, await VelopersRSS(feed));
   },
 };
 
 export { hook, processRSSFeed };
+
